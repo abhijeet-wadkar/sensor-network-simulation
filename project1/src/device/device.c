@@ -6,6 +6,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <malloc.h>
 #include <string.h>
 #include <unistd.h>
@@ -32,6 +33,7 @@ int create_device(device_handle *handle, device_create_params *params)
 
 	memset(device, 0, sizeof(device_context));
 	device->device_params = params;
+	device->state = 0;
 
 	/* create network read thread */
 	return_value = create_network_thread(&device->network_thread, params->device_ip_address);
@@ -105,10 +107,16 @@ static void* read_callback(void *context)
 	device_context *device = (device_context*)context;
 	int return_value = 0;
 	message msg;
+	message snd_msg;
 
 	return_value = read_message(device->socket_fd, &msg);
 	if(return_value != E_SUCCESS)
 	{
+		if(return_value == E_SOCKET_CONNECTION_CLOSED)
+		{
+			printf("Socket connection from server closed...\n");
+			exit(0);
+		}
 		LOG(("Error in read message\n"));
 		return NULL;
 	}
@@ -117,6 +125,17 @@ static void* read_callback(void *context)
 	{
 	case SWITCH:
 		LOG(("SWITCH: %d\n", msg.u.value));
+
+		if(msg.u.value != device->state)
+			device->state = msg.u.value;
+
+		snd_msg.type = CURRENT_STATE;
+		snd_msg.u.value = device->state;
+		return_value = write_message(device->socket_fd, &snd_msg);
+		if(E_SUCCESS != return_value)
+		{
+			LOG(("Error in sending message to gateway\n"));
+		}
 		break;
 	default:
 		LOG(("Other message was received\n"));

@@ -130,6 +130,10 @@ int read_message(int socket_fd, message *msg)
 	while(1)
 	{
 		read_count += read(socket_fd, &msg_size, sizeof(int) - read_count);
+		if(read_count==0)
+		{
+			return (E_SOCKET_CONNECTION_CLOSED);
+		}
 		if(read_count == sizeof(int))
 			break;
 	}
@@ -139,6 +143,10 @@ int read_message(int socket_fd, message *msg)
 	while(1)
 	{
 		read_count += read(socket_fd, &buffer, msg_size - read_count);
+		if(read_count==0)
+		{
+			return (E_SOCKET_CONNECTION_CLOSED);
+		}
 		if(read_count == msg_size)
 			break;
 	}

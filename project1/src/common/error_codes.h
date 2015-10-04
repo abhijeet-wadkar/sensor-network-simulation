@@ -15,6 +15,7 @@
 #define E_SOCKET_CREATE_ERROR -101
 #define E_SOCKET_CONNCTION_ERORR -102
 #define E_SOCKET_SEND_ERROR -103
+#define E_SOCKET_CONNECTION_CLOSED -104
 
 /* Message paring errors -201 to -300*/
 #define E_INVALID_MESSAGE -201

@@ -28,6 +28,7 @@ typedef struct device_context
 	device_create_params *device_params;
 	int socket_fd;
 	network_thread_handle network_thread;
+	int state;
 }device_context;
 
 int create_device(device_handle *handle, device_create_params *params);

@@ -24,6 +24,7 @@ typedef struct gateway_client
 	char* client_port_number;
 	char* area_id;
 	int state;
+	int connection_state;
 }gateway_client;
 
 typedef struct gateway_create_params
@@ -43,5 +44,7 @@ typedef struct gateway_context
 
 int create_gateway(gateway_handle*, gateway_create_params*);
 void delete_gateway(gateway_handle);
+int set_interval(gateway_handle handle, int index, int interval);
+void print_sensors(gateway_handle handle);
 
 #endif /* GATEWAY_H_ */

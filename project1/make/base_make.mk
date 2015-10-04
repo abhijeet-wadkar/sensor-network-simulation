@@ -9,7 +9,8 @@ all : $(TOP_DIR)/obj/$(EXE_NAME)
 
 $(TOP_DIR)/obj/$(EXE_NAME) : $(OBJS_FULL)
 	@echo "Making EXE"
-	@$(CC) -o $(TOP_DIR)/obj/$(EXE_NAME) $(OBJS_FULL) $(EXT_LIB)
+	@mkdir -p $(TOP_DIR)/obj/$(EXE_NAME)/
+	@$(CC) -o $(TOP_DIR)/obj/$(EXE_NAME)/$(EXE_NAME) $(OBJS_FULL) $(EXT_LIB)
 
 $(OBJ_DIR)/%.o: $(TOP_DIR)/%.c
 	@echo "Compiling "$<

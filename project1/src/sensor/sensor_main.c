@@ -27,9 +27,9 @@ int main(int argc, char*argv[])
 
 	LOG(("Number of arguments are: %d\n", argc));
 
-	if(argc<2)
+	if(argc<3)
 	{
-		printf("Please provide configuration file name\n");
+		printf("Please provide configuration file name(s)\n");
 		return (0);
 	}
 
@@ -89,6 +89,8 @@ int main(int argc, char*argv[])
 	str_copy(&sensor_device.sensor_ip_address, tokens[1]);
 	str_copy(&sensor_device.sensor_port_no, tokens[2]);
 	str_copy(&sensor_device.sensor_area_id, tokens[3]);
+
+	sensor_device.sensor_value_file_name = argv[2];
 
 	LOG(("sensor ip_address: %s\n", sensor_device.sensor_ip_address));
 	LOG(("sensor port_no: %s\n", sensor_device.sensor_port_no));

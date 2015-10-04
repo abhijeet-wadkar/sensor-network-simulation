@@ -10,6 +10,7 @@ SRCS = src/sensor/sensor.c \
 	src/sensor/sensor_main.c \
 	src/common/network_functions.c \
 	src/common/network_read_thread.c \
-	src/common/string_helper_functions.c
+	src/common/string_helper_functions.c \
+	src/common/logger.c
 	
 include base_make.mk

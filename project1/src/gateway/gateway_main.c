@@ -13,6 +13,7 @@
 #include "gateway.h"
 #include "logger.h"
 #include "string_helper_functions.h"
+#include "error_codes.h"
 
 #define TOKEN_MAX 10
 
@@ -25,6 +26,7 @@ int main(int argc, char*argv[])
 	int count = 0;
 	gateway_create_params gateway_device = {NULL, NULL};
 	gateway_handle gateway = NULL;
+	int return_value = E_FAILURE;
 
 	LOG(("Number of arguments are: %d\n", argc));
 
@@ -66,12 +68,48 @@ int main(int argc, char*argv[])
 	LOG(("IP Address: %s\n", gateway_device.gateway_ip_address));
 	LOG(("Port No: %s\n", gateway_device.gateway_port_no));
 
-	create_gateway(&gateway, &gateway_device);
-	char choice;
+	LOG_GATEWAY(("------------------------------------------------\n"));
 
-	printf("Press enter to exit\n");
-	scanf("%c", &choice);
+	return_value = create_gateway(&gateway, &gateway_device);
+	if(E_SUCCESS != return_value)
+	{
+		free(gateway_device.gateway_ip_address);
+		free(gateway_device.gateway_port_no);
+		fclose(conf_file_pointer);
+		return (0);
+	}
+
+	int choice, interval;
+	while(1)
+	{
+		printf("-------------------Menu----------------\n");
+		printf("1.Change Sensor interval\n");
+		printf("2.Exit\n");
+		printf("Enter your choice: ");
+		scanf("%d", &choice);
+		if(choice==2)
+			break;
+		switch(choice)
+		{
+		case 1:
+			print_sensors(gateway);
+			printf("Enter sensor id: ");
+			scanf("%d", &choice);
+			printf("Enter new interval: ");
+			scanf("%d", &interval);
+			return_value = set_interval(gateway, choice, interval);
+			if(E_SUCCESS != return_value)
+			{
+				printf("Unable to set the interval");
+			}
+			break;
+		default:
+			printf("Enter valid choice...");
+		}
+	}
+
 	delete_gateway(gateway);
+	LOG_GATEWAY(("-------------------------------------------------\n"));
 
 	free(gateway_device.gateway_ip_address);
 	free(gateway_device.gateway_port_no);
