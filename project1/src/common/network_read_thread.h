@@ -11,7 +11,7 @@
 typedef void* network_thread_handle;
 typedef void* (*cbfn)(void*);
 
-#define MAX_READ_SOCKET 10
+#define MAX_READ_SOCKET 50
 
 int create_network_thread(network_thread_handle*, char *);
 int delete_network_thread(network_thread_handle);

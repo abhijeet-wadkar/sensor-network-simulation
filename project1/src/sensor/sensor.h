@@ -8,6 +8,8 @@
 #ifndef SENSOR_H_
 #define SENSOR_H_
 
+#include <pthread.h>
+
 #include "network_read_thread.h"
 
 typedef void* sensor_handle;
@@ -27,10 +29,10 @@ typedef struct sensor_context
 	int interval;
 	int socket_fd;
 	network_thread_handle network_thread;
+	pthread_t set_interval_thread;
 }sensor_context;
 
 int create_sensor(sensor_handle *handle, sensor_create_params *params);
 void delete_sensor(sensor_handle);
-
 
 #endif /* SENSOR_H_ */

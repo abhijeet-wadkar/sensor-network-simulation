@@ -10,10 +10,14 @@
 
 #include <stdio.h>
 
+#define LOG_FILENAME "log.txt"
+
 #ifdef DEBUG
-#define LOG(x) printf("LOGGER:%d ",__LINE__); printf x
+#define LOG(x) log_to_file x;
 #else
 #define LOG
 #endif
+
+void log_to_file(char *msg, ...);
 
 #endif /* LOGGER_H_ */

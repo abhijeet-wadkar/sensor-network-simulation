@@ -8,6 +8,8 @@
 #include <string.h>
 #include <malloc.h>
 
+#include "string_helper_functions.h"
+
 void str_copy(char** dest, char* src)
 {
 	int length = strlen(src);

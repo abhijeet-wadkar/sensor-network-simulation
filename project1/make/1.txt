@@ -1,0 +1,23 @@
+/home/abhijeet/workspace/aos_project1/src/sensor/sensor.c: In function ‘create_sensor’:
+/home/abhijeet/workspace/aos_project1/src/sensor/sensor.c:21:28: warning: incompatible implicit declaration of built-in function ‘malloc’ [enabled by default]
+  sensor = (sensor_context*)malloc(sizeof(sensor_context));
+                            ^
+/home/abhijeet/workspace/aos_project1/src/sensor/sensor.c:28:2: warning: incompatible implicit declaration of built-in function ‘memset’ [enabled by default]
+  memset(sensor, 0, sizeof(sensor_context));
+  ^
+/home/abhijeet/workspace/aos_project1/src/sensor/sensor.c:50:2: warning: passing argument 4 of ‘add_socket’ from incompatible pointer type [enabled by default]
+  return_value = add_socket(sensor->network_thread, sensor->socket_fd, &read_callback, sensor);
+  ^
+In file included from /home/abhijeet/workspace/aos_project1/src/sensor/sensor.h:11:0,
+                 from /home/abhijeet/workspace/aos_project1/src/sensor/sensor.c:10:
+/home/abhijeet/workspace/aos_project1/src/common/network_read_thread.h:18:5: note: expected ‘cbfn’ but argument is of type ‘struct sensor_context *’
+ int add_socket(network_thread_handle, int, void*, cbfn);
+     ^
+/home/abhijeet/workspace/aos_project1/src/common/network_functions.c: In function ‘create_socket’:
+/home/abhijeet/workspace/aos_project1/src/common/network_functions.c:36:32: warning: passing argument 1 of ‘connect’ makes integer from pointer without a cast [enabled by default]
+  if(connect(socket_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
+                                ^
+In file included from /home/abhijeet/workspace/aos_project1/src/common/network_functions.c:9:0:
+/usr/include/x86_64-linux-gnu/sys/socket.h:137:12: note: expected ‘int’ but argument is of type ‘int *’
+ extern int connect (int __fd, __CONST_SOCKADDR_ARG __addr, socklen_t __len);
+            ^

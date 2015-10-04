@@ -1,5 +1,5 @@
 /*
- * sensor.c
+ * device.c
  *
  *  Created on: Sep 22, 2015
  *      Author: Abhijeet Wadkar
@@ -9,7 +9,7 @@
 #include <malloc.h>
 
 #include "common.h"
-#include "sensor.h"
+#include "device.h"
 #include "logger.h"
 #include "string_helper_functions.h"
 
@@ -22,8 +22,8 @@ int main(int argc, char*argv[])
 	char line[LINE_MAX] = {'\0'};
 	char *tokens[TOKEN_MAX] = {NULL};
 	int count = 0;
-	sensor_create_params sensor_device = {NULL, NULL, NULL};
-	sensor_handle sensor = NULL;
+	device_create_params device_device = {NULL, NULL, NULL};
+	device_handle device = NULL;
 
 	LOG(("Number of arguments are: %d\n", argc));
 
@@ -60,10 +60,10 @@ int main(int argc, char*argv[])
 		return (0);
 	}
 
-	str_copy(&sensor_device.gateway_ip_address, tokens[0]);
-	str_copy(&sensor_device.gateway_port_no, tokens[1]);
-	LOG(("IP Address: %s\n", sensor_device.gateway_ip_address));
-	LOG(("Port No: %s\n", sensor_device.gateway_port_no));
+	str_copy(&device_device.gateway_ip_address, tokens[0]);
+	str_copy(&device_device.gateway_port_no, tokens[1]);
+	LOG(("IP Address: %s\n", device_device.gateway_ip_address));
+	LOG(("Port No: %s\n", device_device.gateway_port_no));
 
 	/* Read line */
 	if (fgets(line, LINE_MAX, conf_file_pointer) == NULL)
@@ -80,28 +80,32 @@ int main(int argc, char*argv[])
 		fclose(conf_file_pointer);
 		return (0);
 	}
-	if(strcmp("sensor", tokens[0])!=0)
+	if(strcmp("device", tokens[0])!=0)
 	{
 		printf("Wrong configuration file\n");
 		fclose(conf_file_pointer);
 		return (0);
 	}
-	str_copy(&sensor_device.sensor_ip_address, tokens[1]);
-	str_copy(&sensor_device.sensor_port_no, tokens[2]);
-	str_copy(&sensor_device.sensor_area_id, tokens[3]);
+	str_copy(&device_device.device_ip_address, tokens[1]);
+	str_copy(&device_device.device_port_no, tokens[2]);
+	str_copy(&device_device.device_area_id, tokens[3]);
 
-	LOG(("ip_address: %s\n", sensor_device.sensor_ip_address));
-	LOG(("port_no: %s\n", sensor_device.sensor_port_no));
-	LOG(("area_id: %s\n", sensor_device.sensor_area_id));
+	LOG(("ip_address: %s\n", device_device.device_ip_address));
+	LOG(("port_no: %s\n", device_device.device_port_no));
+	LOG(("area_id: %s\n", device_device.device_area_id));
 
-	create_sensor(&sensor, &sensor_device);
-	delete_sensor(sensor);
+	create_device(&device, &device_device);
+	char choice;
 
-	free(sensor_device.gateway_ip_address);
-	free(sensor_device.gateway_port_no);
-	free(sensor_device.sensor_area_id);
-	free(sensor_device.sensor_ip_address);
-	free(sensor_device.sensor_port_no);
+	printf("Press enter to exit\n");
+	scanf("%c", &choice);
+	delete_device(device);
+
+	free(device_device.gateway_ip_address);
+	free(device_device.gateway_port_no);
+	free(device_device.device_area_id);
+	free(device_device.device_ip_address);
+	free(device_device.device_port_no);
 	fclose(conf_file_pointer);
 	return (0);
 }
