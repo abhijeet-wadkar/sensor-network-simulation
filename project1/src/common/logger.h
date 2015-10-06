@@ -14,10 +14,15 @@
 #define GATEWAY_LOG_FILENAME "gateway_log.txt"
 
 #ifdef DEBUG
-#define LOG(x) log_to_file x;
+#define LOG_DEBUG(x) log_to_file x;
+#define LOG(x)
 #else
+#define LOG_DEBUG(x)
 #define LOG(x)
 #endif
+
+#define LOG_ERROR(x) printf x
+#define LOG_INFO(x) printf x
 
 #define LOG_GATEWAY(x) log_to_gateway_log_file x;
 

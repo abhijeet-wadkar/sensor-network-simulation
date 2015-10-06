@@ -21,8 +21,9 @@ void log_to_file(char *msg, ...)
 
 	if(fp == NULL)
 	{
-		//fp = fopen(LOG_FILENAME, "w");
-		fp = stdout;
+		fp = fopen(LOG_FILENAME, "w");
+		if(fp==NULL)
+			return;
 	}
 	fprintf(fp, "LOGGER:");
 
@@ -45,7 +46,9 @@ void log_to_gateway_log_file(char *msg, ...)
 
 	if(fp1 == NULL)
 	{
-		fp1 = fopen(LOG_FILENAME, "w");
+		fp1 = fopen(GATEWAY_LOG_FILENAME, "w");
+		if(fp1==NULL)
+				return;
 	}
 
 	va_start(arglist,msg);
@@ -57,6 +60,14 @@ void log_to_gateway_log_file(char *msg, ...)
 	fwrite(buffer, strlen(buffer), 1, fp1);
 
 	fflush(fp1);
+}
+
+void logger_close()
+{
+	if(fp)
+		fclose(fp);
+	if(fp1)
+		fclose(fp1);
 }
 
 

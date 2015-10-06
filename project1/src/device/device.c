@@ -27,6 +27,7 @@ int create_device(device_handle *handle, device_create_params *params)
 	device = (device_context*)malloc(sizeof(device_context));
 	if(NULL == device)
 	{
+		LOG_ERROR(("ERROR: Out of memory\n"));
 		delete_device((device_handle)device);
 		return (E_OUT_OF_MEMORY);
 	}
@@ -39,7 +40,7 @@ int create_device(device_handle *handle, device_create_params *params)
 	return_value = create_network_thread(&device->network_thread, params->device_ip_address);
 	if(E_SUCCESS != return_value)
 	{
-		LOG(("Error in creating n/w read thread"));
+		LOG_ERROR(("ERROR: Error in creating n/w read thread\n"));
 		delete_device((device_handle)device);
 		return (return_value);
 	}
@@ -48,7 +49,7 @@ int create_device(device_handle *handle, device_create_params *params)
 	return_value = create_socket(&device->socket_fd, params->gateway_ip_address, params->gateway_port_no);
 	if(E_SUCCESS != return_value)
 	{
-		LOG(("Connection to Server failed\n"));
+		LOG_ERROR(("ERROR: Connection to Server failed\n"));
 		delete_device((device_handle)device);
 		return (return_value);
 	}
@@ -57,7 +58,7 @@ int create_device(device_handle *handle, device_create_params *params)
 	return_value = add_socket(device->network_thread, device->socket_fd,  (void*)device, &read_callback);
 	if(E_SUCCESS != return_value)
 	{
-		LOG(("Connection to Server failed\n"));
+		LOG_ERROR(("ERROR: Connection to Server failed\n"));
 		delete_device((device_handle)device);
 		return (return_value);
 	}
@@ -74,7 +75,7 @@ int create_device(device_handle *handle, device_create_params *params)
 	return_value = write_message(device->socket_fd, &msg);
 	if(E_SUCCESS != return_value)
 	{
-		LOG(("Error in registering device\n"));
+		LOG_ERROR(("ERROR: Error in registering device\n"));
 		return (E_FAILURE);
 	}
 
@@ -114,17 +115,22 @@ static void* read_callback(void *context)
 	{
 		if(return_value == E_SOCKET_CONNECTION_CLOSED)
 		{
-			printf("Socket connection from server closed...\n");
+			LOG_ERROR(("ERROR: Socket connection from server closed...\n"));
 			exit(0);
 		}
-		LOG(("Error in read message\n"));
+		LOG_ERROR(("ERROR: Error in read message\n"));
 		return NULL;
 	}
 
 	switch(msg.type)
 	{
 	case SWITCH:
-		LOG(("SWITCH: %d\n", msg.u.value));
+		LOG_INFO(("INFO: SWITCH "));
+		if(msg.u.value==0)
+			LOG_INFO(("off"));
+		else
+			LOG_INFO(("on"));
+		LOG_INFO((" message received\n"));
 
 		if(msg.u.value != device->state)
 			device->state = msg.u.value;
@@ -134,11 +140,11 @@ static void* read_callback(void *context)
 		return_value = write_message(device->socket_fd, &snd_msg);
 		if(E_SUCCESS != return_value)
 		{
-			LOG(("Error in sending message to gateway\n"));
+			LOG_ERROR(("ERROR: Error in sending message to gateway\n"));
 		}
 		break;
 	default:
-		LOG(("Other message was received\n"));
+		LOG_INFO(("INFO: Unknown/Unsupported message was received\n"));
 		break;
 	}
 

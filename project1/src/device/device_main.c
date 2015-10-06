@@ -12,6 +12,7 @@
 #include "device.h"
 #include "logger.h"
 #include "string_helper_functions.h"
+#include "error_codes.h"
 
 #define TOKEN_MAX 10
 
@@ -25,64 +26,64 @@ int main(int argc, char*argv[])
 	device_create_params device_device = {NULL, NULL, NULL};
 	device_handle device = NULL;
 
-	LOG(("Number of arguments are: %d\n", argc));
+	LOG_DEBUG(("DEBUG: Number of arguments are: %d\n", argc));
 
 	if(argc<2)
 	{
-		printf("Please provide configuration file name\n");
+		LOG_ERROR(("ERROR: Please provide configuration file name\n"));
 		return (0);
 	}
 
 	conf_file_name = argv[1];
 
-	LOG(("Configuration File Name is %s\n", conf_file_name));
+	LOG_DEBUG(("DEBUG: Configuration File Name is %s\n", conf_file_name));
 
 	conf_file_pointer = fopen(conf_file_name, "r");
 	if(!conf_file_pointer)
 	{
-		printf("Error in opening configuration file\n");
+		LOG_ERROR(("ERROR: Error in opening configuration file\n"));
 		return (0);
 	}
 
 	/* Read line */
 	if(fgets(line, LINE_MAX, conf_file_pointer) == NULL)
 	{
-		LOG(("Cleanup and return"));
+		LOG_DEBUG(("DEBUG: Cleanup and return"));
 		fclose(conf_file_pointer);
-		printf("Wrong configuration file\n");
+		LOG_ERROR(("ERROR: Wrong configuration file\n"));
 		return (0);
 	}
 	str_tokenize(line, ":\n\r", tokens, &count);
 	if(count<2)
 	{
-		printf("Wrong configuration file\n");
+		LOG_ERROR(("ERROR: Wrong configuration file\n"));
 		fclose(conf_file_pointer);
 		return (0);
 	}
 
 	str_copy(&device_device.gateway_ip_address, tokens[0]);
 	str_copy(&device_device.gateway_port_no, tokens[1]);
-	LOG(("IP Address: %s\n", device_device.gateway_ip_address));
-	LOG(("Port No: %s\n", device_device.gateway_port_no));
+	LOG_DEBUG(("DEBUG: IP Address: %s\n", device_device.gateway_ip_address));
+	LOG_DEBUG(("DEBUG: Port No: %s\n", device_device.gateway_port_no));
 
 	/* Read line */
 	if (fgets(line, LINE_MAX, conf_file_pointer) == NULL)
 	{
-		LOG(("Cleanup and return"));
+		LOG_DEBUG(("DEBUG: Cleanup and return"));
 		fclose(conf_file_pointer);
-		printf("Wrong configuration file\n");
+		LOG_ERROR(("ERROR: Wrong configuration file\n"));
 		return (0);
 	}
 	str_tokenize(line, ":\r\n", tokens, &count);
 	if (count < 4)
 	{
-		printf("Wrong configuration file\n");
+		LOG_ERROR(("ERROR: Wrong configuration file\n"));
 		fclose(conf_file_pointer);
 		return (0);
 	}
 	if(strcmp("device", tokens[0])!=0)
 	{
-		printf("Wrong configuration file\n");
+		LOG_ERROR(("ERROR: Wrong configuration file\n"));
 		fclose(conf_file_pointer);
 		return (0);
 	}
@@ -90,11 +91,23 @@ int main(int argc, char*argv[])
 	str_copy(&device_device.device_port_no, tokens[2]);
 	str_copy(&device_device.device_area_id, tokens[3]);
 
-	LOG(("ip_address: %s\n", device_device.device_ip_address));
-	LOG(("port_no: %s\n", device_device.device_port_no));
-	LOG(("area_id: %s\n", device_device.device_area_id));
+	LOG_DEBUG(("DEBUG: ip_address: %s\n", device_device.device_ip_address));
+	LOG_DEBUG(("DEBUG: port_no: %s\n", device_device.device_port_no));
+	LOG_DEBUG(("DEBUG: area_id: %s\n", device_device.device_area_id));
 
-	create_device(&device, &device_device);
+	int return_value;
+	return_value = create_device(&device, &device_device);
+	if(E_SUCCESS != return_value)
+	{
+		LOG_ERROR(("ERROR: Unable to create smart device\n"));
+		free(device_device.gateway_ip_address);
+		free(device_device.gateway_port_no);
+		free(device_device.device_area_id);
+		free(device_device.device_ip_address);
+		free(device_device.device_port_no);
+		fclose(conf_file_pointer);
+		return (0);
+	}
 	char choice;
 
 	printf("Press enter to exit\n");
@@ -107,5 +120,6 @@ int main(int argc, char*argv[])
 	free(device_device.device_ip_address);
 	free(device_device.device_port_no);
 	fclose(conf_file_pointer);
+	logger_close();
 	return (0);
 }

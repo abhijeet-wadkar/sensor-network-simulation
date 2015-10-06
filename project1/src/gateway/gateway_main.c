@@ -28,51 +28,52 @@ int main(int argc, char*argv[])
 	gateway_handle gateway = NULL;
 	int return_value = E_FAILURE;
 
-	LOG(("Number of arguments are: %d\n", argc));
+	LOG_DEBUG(("DEBUG: Number of arguments are: %d\n", argc));
 
 	if(argc<2)
 	{
-		printf("Please provide configuration file name\n");
+		LOG_ERROR(("ERROR: Please provide configuration file name\n"));
 		return (0);
 	}
 
 	conf_file_name = argv[1];
 
-	LOG(("Configuration File Name is %s\n", conf_file_name));
+	LOG_DEBUG(("DEBUG: Configuration File Name is %s\n", conf_file_name));
 
 	conf_file_pointer = fopen(conf_file_name, "r");
 	if(!conf_file_pointer)
 	{
-		printf("Error in opening configuration file\n");
+		LOG_ERROR(("ERROR: Error in opening configuration file\n"));
 		return (0);
 	}
 
 	/* Read line */
 	if(fgets(line, LINE_MAX, conf_file_pointer) == NULL)
 	{
-		LOG(("Cleanup and return"));
+		LOG_DEBUG(("DEBUG: Cleanup and return\n"));
 		fclose(conf_file_pointer);
-		printf("Wrong configuration file\n");
+		LOG_ERROR(("ERROR: Wrong configuration file\n"));
 		return (0);
 	}
 	str_tokenize(line, ":\n\r", tokens, &count);
 	if(count<2)
 	{
-		printf("Wrong configuration file\n");
+		LOG_ERROR(("Wrong configuration file\n"));
 		fclose(conf_file_pointer);
 		return (0);
 	}
 
 	str_copy(&gateway_device.gateway_ip_address, tokens[0]);
 	str_copy(&gateway_device.gateway_port_no, tokens[1]);
-	LOG(("IP Address: %s\n", gateway_device.gateway_ip_address));
-	LOG(("Port No: %s\n", gateway_device.gateway_port_no));
+	LOG_DEBUG(("IP Address: %s\n", gateway_device.gateway_ip_address));
+	LOG_DEBUG(("Port No: %s\n", gateway_device.gateway_port_no));
 
 	LOG_GATEWAY(("------------------------------------------------\n"));
 
 	return_value = create_gateway(&gateway, &gateway_device);
 	if(E_SUCCESS != return_value)
 	{
+		LOG_ERROR(("ERROR: Unable to create gateway\n"));
 		free(gateway_device.gateway_ip_address);
 		free(gateway_device.gateway_port_no);
 		fclose(conf_file_pointer);
@@ -100,11 +101,11 @@ int main(int argc, char*argv[])
 			return_value = set_interval(gateway, choice, interval);
 			if(E_SUCCESS != return_value)
 			{
-				printf("Unable to set the interval");
+				printf("Unable to set the interval\n");
 			}
 			break;
 		default:
-			printf("Enter valid choice...");
+			printf("Enter valid choice...\n");
 		}
 	}
 
@@ -114,5 +115,6 @@ int main(int argc, char*argv[])
 	free(gateway_device.gateway_ip_address);
 	free(gateway_device.gateway_port_no);
 	fclose(conf_file_pointer);
+	logger_close();
 	return (0);
 }

@@ -38,7 +38,7 @@ int create_gateway(gateway_handle* handle, gateway_create_params *params)
 	gateway = (gateway_context*)malloc(sizeof(gateway_context));
 	if(NULL == gateway)
 	{
-		LOG(("Out of memory"));
+		LOG_ERROR(("ERROR: Out of memory\n"));
 		return (E_OUT_OF_MEMORY);
 	}
 
@@ -48,7 +48,7 @@ int create_gateway(gateway_handle* handle, gateway_create_params *params)
 	return_value = create_network_thread(&gateway->network_thread, params->gateway_ip_address);
 	if(E_SUCCESS != return_value)
 	{
-		LOG(("Error in creating n/w read thread"));
+		LOG_ERROR(("ERROR: Error in creating n/w read thread\n"));
 		delete_gateway((gateway_handle)gateway);
 		return (return_value);
 	}
@@ -57,7 +57,7 @@ int create_gateway(gateway_handle* handle, gateway_create_params *params)
 	return_value = create_server_socket(&gateway->server_socket_fd, params->gateway_ip_address, params->gateway_port_no);
 	if(E_SUCCESS != return_value)
 	{
-		LOG(("Connection to Server failed\n"));
+		LOG_ERROR(("ERROR: Error in creating the socket\n"));
 		delete_gateway((gateway_handle)gateway);
 		return (return_value);
 	}
@@ -66,7 +66,7 @@ int create_gateway(gateway_handle* handle, gateway_create_params *params)
 	return_value = add_socket(gateway->network_thread, gateway->server_socket_fd,  (void*)gateway, &accept_callback);
 	if(E_SUCCESS != return_value)
 	{
-		LOG(("Connection to Server failed\n"));
+		LOG_ERROR(("ERROR: add_socket() failed\n"));
 		delete_gateway((gateway_handle)gateway);
 		return (return_value);
 	}
@@ -78,9 +78,22 @@ void delete_gateway(gateway_handle handle)
 {
 	/* release all the resources */
 	gateway_context* gateway = (gateway_context*)handle;
+	int index;
 
 	if(gateway)
 	{
+		for(index=0; index<gateway->client_count; index++)
+		{
+			remove_socket(gateway->network_thread, gateway->clients[index]->comm_socket_fd);
+			if(gateway->clients[index]->client_ip_address)
+				free(gateway->clients[index]->client_ip_address);
+			if(gateway->clients[index]->client_port_number)
+				free(gateway->clients[index]->client_port_number);
+			if(gateway->clients[index]->area_id)
+				free(gateway->clients[index]->area_id);
+			free(gateway->clients[index]);
+		}
+
 		if(gateway->network_thread)
 		{
 			delete_network_thread(gateway->network_thread);
@@ -105,7 +118,7 @@ void* accept_callback(void *context)
 	client = (gateway_client*)malloc(sizeof(gateway_client));
 	if(!client)
 	{
-		LOG(("Out of memory"));
+		LOG_DEBUG(("DEBUG: Out of memory\n"));
 		return (NULL);
 	}
 
@@ -113,7 +126,7 @@ void* accept_callback(void *context)
 	client->comm_socket_fd = accept(gateway->server_socket_fd, (struct sockaddr*)NULL, NULL);
 	if(client->comm_socket_fd < 0)
 	{
-		LOG(("Accept call failed\n"));
+		LOG_ERROR(("ERROR: Accept call failed\n"));
 		free(client);
 		return NULL;
 	}
@@ -125,7 +138,7 @@ void* accept_callback(void *context)
 	return_value = add_socket(gateway->network_thread, client->comm_socket_fd,  (void*)client, &read_callback);
 	if(E_SUCCESS != return_value)
 	{
-		LOG(("Connection to Server failed\n"));
+		LOG_ERROR(("ERROR: add_socket() failed\n"));
 		free(client);
 		return (NULL);
 	}
@@ -141,39 +154,67 @@ void* read_callback(void *context)
 	int return_value = 0;
 	message msg;
 	message snd_msg;
+	int index;
+	int flag_found = 0;
 
 	return_value = read_message(client->comm_socket_fd, &msg);
 	if(return_value != E_SUCCESS)
 	{
 		if(return_value == E_SOCKET_CONNECTION_CLOSED)
 		{
-			printf("Connection closed for client: %s-%s-%s...\n",
+			LOG_ERROR(("ERROR: Connection closed for client: %s-%s-%s...\n",
 					client->client_ip_address,
 					client->client_port_number,
-					client->area_id);
+					client->area_id));
 			remove_socket(client->gateway->network_thread, client->comm_socket_fd);
 			client->connection_state = 0;
+			LOG_ERROR(("ERROR: Connection closed for client\n"));
+			index = 0;
+			flag_found = 0;
+			for(index=0; index<gateway->client_count; index++)
+			{
+				if(gateway->clients[index]->comm_socket_fd == client->comm_socket_fd)
+				{
+					flag_found = 1;
+					break;
+				}
+			}
+			if(flag_found == 1)
+			{
+				for(;index<gateway->client_count-1; index++)
+				{
+					gateway->clients[index] = gateway->clients[index+1];
+				}
+				gateway->client_count--;
+			}
+			if(client->client_ip_address)
+				free(client->client_ip_address);
+			if(client->client_port_number)
+				free(client->client_port_number);
+			if(client->area_id)
+				free(client->area_id);
+			free(client);
+			return NULL;
 		}
-		LOG(("Error in read message\n"));
+		LOG_ERROR(("ERROR: Error in read message\n"));
 		return NULL;
 	}
 
 	switch(msg.type)
 	{
 	case SET_INTERVAL:
-		LOG(("SET_INTERVAL\n"));
-		LOG(("Value: %d\n", msg.u.value));
+		LOG_DEBUG(("DEBUG: SetInterval message received, Value: %d\n", msg.u.value));
 		break;
 	case REGISTER:
-		LOG(("REGISTER\n"));
+		LOG_DEBUG(("DEBUG: Register message received\n"));
 		client->type = msg.u.s.type;
 		client->client_ip_address = msg.u.s.ip_address;
 		client->client_port_number = msg.u.s.port_no;
 		client->area_id = msg.u.s.area_id;
-		LOG(("DeviceType:%d\n", client->type));
-		LOG(("IP Address: %s\n", client->client_ip_address));
-		LOG(("Port Number: %s\n", client->client_port_number));
-		LOG(("Area Id: %s\n", client->area_id));
+		LOG_DEBUG(("DEBUG: DeviceType:%d\n", client->type));
+		LOG_DEBUG(("DEBUG: IP Address: %s\n", client->client_ip_address));
+		LOG_DEBUG(("DEBUG: Port Number: %s\n", client->client_port_number));
+		LOG_DEBUG(("DEBUG: Area Id: %s\n", client->area_id));
 		if(client->type == SENSOR)
 		{
 			client->state = 1;
@@ -184,8 +225,8 @@ void* read_callback(void *context)
 		}
 		break;
 	case CURRENT_VALUE:
-		LOG(("CURRENT_VALUE\n"));
-		LOG(("Value: %d\n", msg.u.value));
+		LOG_DEBUG(("Current value message received\n"));
+		LOG_DEBUG(("Value: %d\n", msg.u.value));
 		LOG_GATEWAY(("%d----%s:%s----%s----%s----%d\n",
 				(int)(client&&0xFFFF),
 				client->client_ip_address,
@@ -208,7 +249,7 @@ void* read_callback(void *context)
 					return_value = write_message(gateway->clients[index]->comm_socket_fd, &snd_msg);
 					if(E_SUCCESS != return_value)
 					{
-						LOG(("Error in sending switch on message to device %s-%s-%s",
+						LOG_ERROR(("Error in sending switch on message to device %s-%s-%s",
 								gateway->clients[index]->client_ip_address,
 								gateway->clients[index]->client_port_number,
 								gateway->clients[index]->area_id));
@@ -232,7 +273,7 @@ void* read_callback(void *context)
 					return_value = write_message(gateway->clients[index]->comm_socket_fd, &snd_msg);
 					if(E_SUCCESS != return_value)
 					{
-						LOG(("Error in sending switch on message to device %s-%s-%s",
+						LOG_ERROR(("Error in sending switch on message to device %s-%s-%s",
 								gateway->clients[index]->client_ip_address,
 								gateway->clients[index]->client_port_number,
 								gateway->clients[index]->area_id));
@@ -243,6 +284,7 @@ void* read_callback(void *context)
 		}
 		break;
 	case CURRENT_STATE:
+		LOG_DEBUG(("DEBUG: Current state message is received\n"));
 		LOG_GATEWAY(("%d----%s:%s----%s----%s----%s\n",
 						(int)(client&&0xFFFF),
 						client->client_ip_address,
@@ -250,12 +292,9 @@ void* read_callback(void *context)
 						device_string[client->type],
 						client->area_id,
 						state_string[msg.u.value]));
-		LOG(("CURRENT_STATE\n"));
-		/* device current state changed */
 		break;
 	default:
-		LOG(("MessageNotHandled\n"));
-		printf("Other message was received\n");
+		LOG_DEBUG(("Unknown/Unhandled message is received\n"));
 		break;
 	}
 	return (NULL);
@@ -272,6 +311,10 @@ int set_interval(gateway_handle handle, int index, int interval)
 		snd_msg.u.value = interval;
 		return (write_message(gateway->clients[index]->comm_socket_fd, &snd_msg));
 	}
+	else
+	{
+		LOG_ERROR(("ERROR: Such sensor don't exists\n"));
+	}
 	return (E_FAILURE);
 }
 
@@ -280,11 +323,13 @@ void print_sensors(gateway_handle handle)
 	int index;
 	gateway_context *gateway = handle;
 
+	printf("----------------List of sensor---------------\n");
+	printf("<ID>-<IP_Address>-<Port_Number>-<AreaId>\n");
 	for(index=0; index<gateway->client_count; index++)
 	{
 		if(gateway->clients[index]->type == SENSOR)
 		{
-			printf("%d:%s-%s-%s",
+			printf("%d:%s-%s-%s\n",
 					index,
 					gateway->clients[index]->client_ip_address,
 					gateway->clients[index]->client_port_number,

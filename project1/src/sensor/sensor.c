@@ -34,6 +34,7 @@ int create_sensor(sensor_handle *handle, sensor_create_params *params)
 	if(NULL == sensor)
 	{
 		delete_sensor((sensor_handle)sensor);
+		LOG_ERROR(("ERROR: Out of memory\n"));
 		return (E_OUT_OF_MEMORY);
 	}
 
@@ -55,7 +56,7 @@ int create_sensor(sensor_handle *handle, sensor_create_params *params)
 	return_value = create_network_thread(&sensor->network_thread, params->sensor_ip_address);
 	if(E_SUCCESS != return_value)
 	{
-		LOG(("Error in creating n/w read thread"));
+		LOG_ERROR(("ERROR: Error in creating n/w read thread\n"));
 		delete_sensor((sensor_handle)sensor);
 		return (return_value);
 	}
@@ -64,7 +65,7 @@ int create_sensor(sensor_handle *handle, sensor_create_params *params)
 	return_value = create_socket(&sensor->socket_fd, params->gateway_ip_address, params->gateway_port_no);
 	if(E_SUCCESS != return_value)
 	{
-		LOG(("Connection to Server failed\n"));
+		LOG_ERROR(("ERROR: Connection to Server failed\n"));
 		delete_sensor((sensor_handle)sensor);
 		return (return_value);
 	}
@@ -73,7 +74,7 @@ int create_sensor(sensor_handle *handle, sensor_create_params *params)
 	return_value = add_socket(sensor->network_thread, sensor->socket_fd,  (void*)sensor, &read_callback);
 	if(E_SUCCESS != return_value)
 	{
-		LOG(("Connection to Server failed\n"));
+		LOG_ERROR(("ERROR: add_socket() filed\n"));
 		delete_sensor((sensor_handle)sensor);
 		return (return_value);
 	}
@@ -90,7 +91,7 @@ int create_sensor(sensor_handle *handle, sensor_create_params *params)
 	return_value = write_message(sensor->socket_fd, &msg);
 	if(E_SUCCESS != return_value)
 	{
-		LOG(("Error in registering sensor\n"));
+		LOG_ERROR(("ERROR: Error in registering sensor\n"));
 		return (E_FAILURE);
 	}
 
@@ -143,21 +144,21 @@ static void* read_callback(void *context)
 	{
 		if(return_value == E_SOCKET_CONNECTION_CLOSED)
 		{
-			printf("Socket connection from server closed...\n");
+			LOG_ERROR(("ERROR: Socket connection from server closed...\n"));
 			exit(0);
 		}
-		LOG(("Error in read message\n"));
+		LOG_ERROR(("ERROR: Error in read message\n"));
 		return NULL;
 	}
 
 	switch(msg.type)
 	{
 	case SET_INTERVAL:
-		printf("SetInterval message received");
+		LOG_INFO(("INFO: SetInterval message received\n"));
 		sensor->interval = msg.u.value;
 		break;
 	default:
-		printf("Other message was received\n");
+		LOG_INFO(("INFO: Unknown/Unhandled message was received\n"));
 		break;
 	}
 
@@ -166,7 +167,7 @@ static void* read_callback(void *context)
 
 void sighand(int signo)
 {
-	LOG(("EXITING SET_VALUE_THREAD\n"));
+	LOG_DEBUG(("DEBUG: EXITING SET_VALUE_THREAD\n"));
 }
 
 void* set_value_thread(void *context)
@@ -189,7 +190,7 @@ void* set_value_thread(void *context)
 			/* Figure out the value from file */
 			if(fgets(line, LINE_MAX, sensor->sensor_value_file_pointer) == NULL)
 			{
-				LOG(("Seeking to beginning of file"));
+				LOG_DEBUG(("DEBUG: Seeking to beginning of file"));
 				rewind(sensor->sensor_value_file_pointer);
 				sensor->clock = 0;
 				continue;
@@ -198,8 +199,8 @@ void* set_value_thread(void *context)
 			str_tokenize(line, ";\n\r", tokens, &count);
 			if(count != 3)
 			{
-				LOG(("Count: %d, line:%s\n", count, line));
-				LOG(("Wrong sensor value file\n"));
+				LOG_ERROR(("ERROR: Wrong sensor temperature value file\n"));
+				break;
 			}
 
 			start = atoi(tokens[0]);
@@ -210,16 +211,17 @@ void* set_value_thread(void *context)
 
 		msg.u.value = sensor->value;
 
+		LOG_INFO(("INFO: Sending temperature value %d to gateway\n", sensor->value));
 		return_value = write_message(sensor->socket_fd, &msg);
 		if(E_SUCCESS != return_value)
 		{
-			LOG(("Error in sending sensor value to gateway\n"));
+			LOG_ERROR(("ERROR: Error in sending sensor temperature value to gateway\n"));
 		}
-		LOG(("Sleeping for %d second(s)\n", sensor->interval));
+		LOG_INFO(("INFO: Sleeping for %d second(s)\n", sensor->interval));
 		sleep(sensor->interval);
 		sensor->clock += sensor->interval;
 	}
 
-	LOG(("Exiting SetValueThread...\n"));
+	LOG_DEBUG(("Exiting SetValueThread...\n"));
 	return (NULL);
 }

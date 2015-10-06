@@ -1,5 +1,5 @@
 CC = gcc
-CCFLAGS = -g -Wall
+CCFLAGS = -g -Wall -DDEBUG
 EXE_NAME = gateway
 EXT_LIB = -lpthread
 
